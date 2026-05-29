@@ -26,6 +26,7 @@ struct ContentView: View {
             }
 
             Toggle("Auto-answer when a question is heard", isOn: $model.autoMode)
+            Toggle("Web search (free — Wikipedia + DuckDuckGo)", isOn: $model.webSearchEnabled)
 
             Button(action: model.triggerAnswer) {
                 Text(model.isThinking ? "Thinking…" : "Answer now")

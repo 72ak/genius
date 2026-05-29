@@ -11,11 +11,15 @@ final class FoundationModelsProvider: AnswerProvider {
         return false
     }
 
-    func answer(context: String) async throws -> String {
+    func answer(context: String, facts: String) async throws -> String {
         let session = LanguageModelSession {
             geniusInstructions
         }
-        let prompt = "Conversation so far:\n\"\(context)\"\n\nWhat should I say?"
+        var prompt = ""
+        if !facts.isEmpty {
+            prompt += "Relevant facts from the web (use what's helpful, ignore the rest):\n\(facts)\n\n"
+        }
+        prompt += "Conversation so far:\n\"\(context)\"\n\nWhat should I say?"
         let response = try await session.respond(to: prompt)
         return response.content
     }

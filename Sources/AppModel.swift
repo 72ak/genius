@@ -7,6 +7,7 @@ import SwiftUI
 final class AppModel: ObservableObject {
     @Published var recallSeconds: Double = 60      // 30...300
     @Published var autoMode = false
+    @Published var webSearchEnabled = true
     @Published var latestAnswer = ""
     @Published var isThinking = false
     @Published var statusMessage = "Starting…"
@@ -58,7 +59,6 @@ final class AppModel: ObservableObject {
         guard !isThinking else { return }
         Task {
             isThinking = true
-            statusMessage = "Thinking…"
             defer { isThinking = false }
 
             let context = await transcriber.recall(seconds: recallSeconds)
@@ -68,7 +68,13 @@ final class AppModel: ObservableObject {
             }
 
             do {
-                let answer = try await provider.answer(context: context)
+                var facts = ""
+                if webSearchEnabled {
+                    statusMessage = "Looking it up…"
+                    facts = await WebSearch.lookup(SearchQuery.extract(from: context))
+                }
+                statusMessage = "Thinking…"
+                let answer = try await provider.answer(context: context, facts: facts)
                 latestAnswer = answer
                 Notifier.post(answer: answer)
                 if AudioSessionManager.shared.headphonesConnected {
