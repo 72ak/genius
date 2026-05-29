@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
+packages:
+  swift-llama-cpp:
+    url: https://github.com/pgorzelany/swift-llama-cpp.git
+    branch: main
 targets:
   Genius:
     type: application
@@ -15,10 +19,15 @@ targets:
       properties:
         CFBundleDisplayName: Genius
         UILaunchScreen: {}
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         NSMicrophoneUsageDescription: "Genius listens to nearby conversation so it can answer on your behalf."
         NSSpeechRecognitionUsageDescription: "Genius transcribes speech on-device to work out what to say."
         UIBackgroundModes:
           - audio
+    dependencies:
+      - package: swift-llama-cpp
+        product: SwiftLlama
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.akash.genius

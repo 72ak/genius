@@ -54,7 +54,7 @@ struct ContentView: View {
                     Text(model.localQwenModelName)
                         .font(.headline)
 
-                    Text("Targeting 4B first because it is much more realistic for fast local iPhone answers than 8B/27B. Runtime/model install still needs to be wired.")
+                    Text(LocalQwenProvider.installHint)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
