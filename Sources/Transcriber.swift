@@ -82,17 +82,30 @@ final class Transcriber: ObservableObject {
         request.requiresOnDeviceRecognition = true
         self.request = request
 
-        task = recognizer?.recognitionTask(with: request) { [weak self] result, _ in
+        task = recognizer?.recognitionTask(with: request) { [weak self] result, error in
             guard let self else { return }
             Task { @MainActor in
                 if let result {
                     self.livePartial = result.bestTranscription.formattedString
                     if result.isFinal {
                         self.commitLive()
+                        self.restartTask()   // keep listening — don't go deaf after a pause
                     }
+                }
+                if error != nil {
+                    self.restartTask()
                 }
             }
         }
+    }
+
+    /// Start a fresh recognition task immediately (the previous one has ended).
+    private func restartTask() {
+        guard isRunning else { return }
+        task = nil
+        request?.endAudio()
+        request = nil
+        beginTask()
     }
 
     private func recycleTask() {

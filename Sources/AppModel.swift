@@ -13,6 +13,7 @@ final class AppModel: ObservableObject {
     @Published var webSearchEnabled = true
     @Published var headphoneButtonEnabled = true { didSet { updateRemoteControl() } }
     @Published var latestAnswer = ""
+    @Published var lastFacts = ""
     @Published var isThinking = false
     @Published var statusMessage = "Starting…"
 
@@ -83,6 +84,7 @@ final class AppModel: ObservableObject {
         guard !isThinking else { return }
         Task {
             isThinking = true
+            output.stop()   // clear any answer that's still playing
             defer { isThinking = false }
 
             let context = await transcriber.recall(seconds: recallSeconds)
@@ -97,6 +99,7 @@ final class AppModel: ObservableObject {
                     statusMessage = "Looking it up…"
                     facts = await WebSearch.lookup(SearchQuery.extract(from: context))
                 }
+                lastFacts = facts
                 statusMessage = "Thinking…"
                 let answer = try await provider.answer(context: context, facts: facts)
                 latestAnswer = answer

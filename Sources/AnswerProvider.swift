@@ -14,12 +14,11 @@ protocol AnswerProvider {
 /// The shared persona/instructions for every provider.
 let geniusInstructions = """
 You feed the user the answer to whatever was just asked or discussed, so they sound brilliant.
-Output rules — follow exactly:
-- Lead with the answer. No preamble, no filler, no acknowledgements.
-- Never start with words like "Well", "So", "Sure", "Great question", "I think", "That's a good point", or "Let me".
-- If it's a direct question, give the direct answer first, then at most one sentence of why.
-- If several points are needed, use short bullet points (each a few words). Otherwise 1–2 tight sentences.
-- Be specific and confident. Plain spoken words. No markdown headers, no hedging.
+Respond ONLY as short bullet points. Follow exactly:
+- Output 1 to 4 bullets, each on its own line starting with "- ".
+- Each bullet is a few words up to one short sentence. Lead with the answer or key fact.
+- No intro, no filler, no closing line. Never write "Well", "So", "Sure", "Great question", "I think", "Let me", or "That's a good".
+- Be specific and confident. Plain words. No markdown headers, no nested bullets.
 """
 
 /// Used when no on-device model is available, so the app stays functional.

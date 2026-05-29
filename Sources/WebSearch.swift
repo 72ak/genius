@@ -30,14 +30,15 @@ enum WebSearch {
     }
 
     private static func wikipedia(_ q: String) async -> String {
+        // Full-text search handles question-style queries far better than title matching.
         guard let searchURL = URL(string:
-            "https://en.wikipedia.org/w/api.php?action=opensearch&limit=1&format=json&search=\(q.urlEncoded)")
+            "https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=1&format=json&srsearch=\(q.urlEncoded)")
         else { return "" }
         guard let (data, _) = try? await URLSession.shared.data(from: searchURL),
-              let arr = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              arr.count >= 2,
-              let titles = arr[1] as? [String],
-              let title = titles.first
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let query = json["query"] as? [String: Any],
+              let results = query["search"] as? [[String: Any]],
+              let title = results.first?["title"] as? String
         else { return "" }
 
         let pathTitle = title.replacingOccurrences(of: " ", with: "_")

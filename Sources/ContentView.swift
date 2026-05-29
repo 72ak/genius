@@ -51,6 +51,13 @@ struct ContentView: View {
                     .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
             }
 
+            if !model.lastFacts.isEmpty {
+                Text("🔎 " + model.lastFacts)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(4)
+            }
+
             Spacer()
         }
         .padding()
