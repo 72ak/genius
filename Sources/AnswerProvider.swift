@@ -14,6 +14,7 @@ protocol AnswerProvider {
 enum BrainMode: String, CaseIterable, Identifiable {
     case appleOnDevice
     case localQwen
+    case geminiFlashLite
 
     var id: String { rawValue }
 
@@ -23,6 +24,8 @@ enum BrainMode: String, CaseIterable, Identifiable {
             return "Apple"
         case .localQwen:
             return "Qwen local"
+        case .geminiFlashLite:
+            return "Gemini"
         }
     }
 }
@@ -47,7 +50,7 @@ struct UnavailableProvider: AnswerProvider {
 
 enum AnswerFormatter {
     static func bulletOnly(_ text: String) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = stripThinkBlocks(text).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "" }
 
         let lines = trimmed
@@ -87,5 +90,14 @@ enum AnswerFormatter {
         text.split(whereSeparator: { ".!?".contains($0) })
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
+    }
+
+    private static func stripThinkBlocks(_ text: String) -> String {
+        var output = text
+        while let start = output.range(of: "<think>", options: .caseInsensitive),
+              let end = output.range(of: "</think>", options: .caseInsensitive, range: start.upperBound..<output.endIndex) {
+            output.removeSubrange(start.lowerBound..<end.upperBound)
+        }
+        return output
     }
 }

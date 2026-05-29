@@ -77,6 +77,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 | `AnswerProvider.swift` | `AnswerProvider` protocol + persona instructions + unavailable fallback. |
 | `FoundationModelsProvider.swift` | Brain = Apple's on-device model (`FoundationModels`, iOS 26), guarded by `#if canImport`. |
 | `LocalQwenProvider.swift` | Local open-weight Qwen target: `Qwen/Qwen3-4B-GGUF`, loaded from the app's Documents folder through `swift-llama-cpp`/llama.cpp. |
+| `GeminiProvider.swift` | Cloud fallback using Gemini `gemini-3.1-flash-lite`; API key entered in-app and stored in Keychain. |
 | `WebSearch.swift` | Free, keyless lookups: DuckDuckGo Instant Answers + Wikipedia **full-text** search; pulls a query from the transcript. Fetched facts are shown on screen (🔎). |
 | `AudioSessionManager.swift` | `.playAndRecord` + `.mixWithOthers` (music keeps playing), `.duckOthers` only while speaking; forces **built-in mic** for room pickup; A2DP output to AirPods. |
 | `AudioOutput.swift` | TTS (`AVSpeechSynthesizer`); ducks others while talking; a new answer immediately interrupts one that's still playing. |
@@ -89,7 +90,10 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
   Models can be replaced by a local open-weight model.
 - **Local Qwen target:** start with `Qwen/Qwen3-4B-GGUF`, not 27B. 4B is the realistic first target
   for fast local iPhone answers; 8B can be tried later if memory/latency are acceptable. The app
-  looks for `qwen3-4b.gguf` in its Documents folder.
+  looks for `qwen3-4b.gguf` in its Documents folder. Qwen prompts include `/no_think` to keep
+  latency down and avoid hidden reasoning text.
+- **Gemini Flash-Lite fallback:** `gemini-3.1-flash-lite` is available as a cloud option for fast,
+  cheap answers when a Gemini API key is entered in the app.
 - **Manual retrieval** for web search (search → inject facts into the prompt) instead of the model's
   tool-calling API — more reliable.
 - **Built-in mic, not AirPods mic** — AirPods mic is tuned for the wearer up close; the phone mic
@@ -106,6 +110,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 - [x] Recall window slider (30 s–5 min).
 - [x] On-device "genius" answers via Apple's Foundation Models — **bullet points only**, no filler.
 - [x] Local Qwen mode wired to `swift-llama-cpp`/llama.cpp; requires `qwen3-4b.gguf` in app Documents.
+- [x] Gemini Flash-Lite mode with in-app API key storage via Keychain.
 - [x] Free web search (Wikipedia full-text + DuckDuckGo) feeding the model; toggleable; **fetched facts shown on screen** (🔎) for transparency.
 - [x] TTS to headphones when connected; notification always; music ducked not paused.
 - [x] A new answer **interrupts/replaces** one that's still playing.

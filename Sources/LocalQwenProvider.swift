@@ -24,10 +24,10 @@ struct LocalQwenProvider: AnswerProvider {
         if !facts.isEmpty {
             prompt += "Relevant facts from the web (use what's helpful, ignore the rest):\n\(facts)\n\n"
         }
-        prompt += "Conversation so far:\n\"\(context)\"\n\nWhat should I say?"
+        prompt += "/no_think\nConversation so far:\n\"\(context)\"\n\nWhat should I say?"
 
         return try await LocalQwenEngine.shared.answer(
-            system: geniusInstructions,
+            system: "/no_think\n\(geniusInstructions)",
             prompt: prompt,
             modelURL: modelURL
         )

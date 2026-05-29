@@ -58,6 +58,20 @@ struct ContentView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
+
+                if model.brainMode == .geminiFlashLite {
+                    Text(model.geminiModelName)
+                        .font(.headline)
+
+                    SecureField("Gemini API key", text: $model.geminiAPIKey)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textFieldStyle(.roundedBorder)
+
+                    Text("Stored in Keychain on this iPhone. Flash-Lite is the low-latency, low-cost cloud fallback.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Button(action: model.triggerAnswer) {

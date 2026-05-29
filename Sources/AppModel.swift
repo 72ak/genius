@@ -18,10 +18,17 @@ final class AppModel: ObservableObject {
             updateReadyStatus()
         }
     }
+    @Published var geminiAPIKey: String = "" {
+        didSet {
+            KeychainStore.save(geminiAPIKey, account: "gemini_api_key")
+            updateReadyStatus()
+        }
+    }
     @Published var latestAnswer = ""
     @Published var lastFacts = ""
     @Published var isThinking = false
     let localQwenModelName = LocalQwenProvider.modelName
+    let geminiModelName = GeminiProvider.modelName
     @Published var statusMessage = "Starting…"
 
     let transcriber = Transcriber()
@@ -41,6 +48,8 @@ final class AppModel: ObservableObject {
         } else {
             appleProvider = UnavailableProvider()
         }
+        geminiAPIKey = KeychainStore.read(account: "gemini_api_key")
+
         // Re-publish nested ObservableObjects so the view updates on their changes.
         transcriber.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
@@ -139,6 +148,8 @@ final class AppModel: ObservableObject {
             appleProvider
         case .localQwen:
             LocalQwenProvider()
+        case .geminiFlashLite:
+            GeminiProvider(apiKey: geminiAPIKey)
         }
     }
 
@@ -154,6 +165,8 @@ final class AppModel: ObservableObject {
             return "Listening — but the on-device model isn't ready."
         case .localQwen:
             return LocalQwenProvider.notReadyReason
+        case .geminiFlashLite:
+            return "Gemini selected - add your Gemini API key to answer with Flash-Lite."
         }
     }
 }
