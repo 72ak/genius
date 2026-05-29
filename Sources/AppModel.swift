@@ -12,29 +12,35 @@ final class AppModel: ObservableObject {
     @Published var autoMode = false
     @Published var webSearchEnabled = true
     @Published var headphoneButtonEnabled = true { didSet { updateRemoteControl() } }
+    @Published var brainMode: BrainMode = BrainMode(rawValue: UserDefaults.standard.string(forKey: "brainMode") ?? "") ?? .appleOnDevice {
+        didSet {
+            UserDefaults.standard.set(brainMode.rawValue, forKey: "brainMode")
+            updateReadyStatus()
+        }
+    }
     @Published var latestAnswer = ""
     @Published var lastFacts = ""
     @Published var isThinking = false
+    let localQwenModelName = LocalQwenProvider.modelName
     @Published var statusMessage = "Starting…"
 
     let transcriber = Transcriber()
     let output = AudioOutput()
 
-    private let provider: AnswerProvider
+    private let appleProvider: AnswerProvider
     private let remote = RemoteControl()
     private var cancellables = Set<AnyCancellable>()
 
     init() {
         if #available(iOS 26.0, *) {
             #if canImport(FoundationModels)
-            provider = FoundationModelsProvider()
+            appleProvider = FoundationModelsProvider()
             #else
-            provider = UnavailableProvider()
+            appleProvider = UnavailableProvider()
             #endif
         } else {
-            provider = UnavailableProvider()
+            appleProvider = UnavailableProvider()
         }
-
         // Re-publish nested ObservableObjects so the view updates on their changes.
         transcriber.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
@@ -77,7 +83,7 @@ final class AppModel: ObservableObject {
         }
         transcriber.start()
         updateRemoteControl()
-        statusMessage = provider.isReady ? "Listening…" : "Listening — but the on-device model isn't ready."
+        updateReadyStatus()
     }
 
     func triggerAnswer() {
@@ -94,6 +100,12 @@ final class AppModel: ObservableObject {
             }
 
             do {
+                let provider = selectedProvider()
+                guard provider.isReady else {
+                    statusMessage = notReadyMessage()
+                    return
+                }
+
                 var facts = ""
                 if webSearchEnabled {
                     statusMessage = "Looking it up…"
@@ -101,7 +113,7 @@ final class AppModel: ObservableObject {
                 }
                 lastFacts = facts
                 statusMessage = "Thinking…"
-                let answer = try await provider.answer(context: context, facts: facts)
+                let answer = AnswerFormatter.bulletOnly(try await provider.answer(context: context, facts: facts))
                 latestAnswer = answer
                 Notifier.post(answer: answer)
                 if AudioSessionManager.shared.headphonesConnected {
@@ -111,6 +123,30 @@ final class AppModel: ObservableObject {
             } catch {
                 statusMessage = "Answer failed: \(error.localizedDescription)"
             }
+        }
+    }
+
+    private func selectedProvider() -> AnswerProvider {
+        switch brainMode {
+        case .appleOnDevice:
+            appleProvider
+        case .localQwen:
+            LocalQwenProvider()
+        }
+    }
+
+    private func updateReadyStatus() {
+        guard transcriber.authorized else { return }
+        let provider = selectedProvider()
+        statusMessage = provider.isReady ? "Listening…" : notReadyMessage()
+    }
+
+    private func notReadyMessage() -> String {
+        switch brainMode {
+        case .appleOnDevice:
+            return "Listening — but the on-device model isn't ready."
+        case .localQwen:
+            return "Local Qwen selected — runtime/model file not installed yet."
         }
     }
 }

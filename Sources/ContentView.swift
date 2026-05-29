@@ -36,6 +36,24 @@ struct ContentView: View {
             Toggle("Web search (free — Wikipedia + DuckDuckGo)", isOn: $model.webSearchEnabled)
             Toggle("Headphone play/pause triggers Genius", isOn: $model.headphoneButtonEnabled)
 
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Answer model", selection: $model.brainMode) {
+                    ForEach(BrainMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                if model.brainMode == .localQwen {
+                    Text(model.localQwenModelName)
+                        .font(.headline)
+
+                    Text("Latest open-weight Qwen target. Local runtime/model bundle still needs to be added before this can answer.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Button(action: model.triggerAnswer) {
                 Text(model.isThinking ? "Thinking…" : "Answer now")
                     .frame(maxWidth: .infinity)

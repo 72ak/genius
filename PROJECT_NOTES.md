@@ -76,6 +76,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 | `TranscriptBuffer.swift` | Timestamped rolling buffer (~6 min); serves "last N seconds" for recall. |
 | `AnswerProvider.swift` | `AnswerProvider` protocol + persona instructions + unavailable fallback. |
 | `FoundationModelsProvider.swift` | Brain = Apple's on-device model (`FoundationModels`, iOS 26), guarded by `#if canImport`. |
+| `LocalQwenProvider.swift` | Local open-weight Qwen target: `Qwen/Qwen3.6-27B`. Scaffold only until an iOS inference runtime + quantized model file are added. |
 | `WebSearch.swift` | Free, keyless lookups: DuckDuckGo Instant Answers + Wikipedia **full-text** search; pulls a query from the transcript. Fetched facts are shown on screen (🔎). |
 | `AudioSessionManager.swift` | `.playAndRecord` + `.mixWithOthers` (music keeps playing), `.duckOthers` only while speaking; forces **built-in mic** for room pickup; A2DP output to AirPods. |
 | `AudioOutput.swift` | TTS (`AVSpeechSynthesizer`); ducks others while talking; a new answer immediately interrupts one that's still playing. |
@@ -84,8 +85,10 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 | `AskGeniusIntent.swift` | App Intent + App Shortcut for Action Button / Back-Tap / Siri. |
 
 ### Key design choices
-- **On-device model first** (no multi-GB download → small app → painless weekly re-sign), pluggable
-  so an open-source model (llama.cpp) or cloud API can slot in later with no rewrite.
+- **On-device model first** (no API key, low latency, private), pluggable so Apple Foundation
+  Models can be replaced by a local open-weight model.
+- **Local Qwen target:** latest open-weight target is `Qwen/Qwen3.6-27B` (Apache-2.0). It is not
+  active yet because the app still needs an iOS inference runtime and a quantized model bundle.
 - **Manual retrieval** for web search (search → inject facts into the prompt) instead of the model's
   tool-calling API — more reliable.
 - **Built-in mic, not AirPods mic** — AirPods mic is tuned for the wearer up close; the phone mic
@@ -100,6 +103,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 - [x] Continuous on-device transcription (accumulating, timestamped); **restarts instantly after a pause** so it never goes deaf.
 - [x] Recall window slider (30 s–5 min).
 - [x] On-device "genius" answers via Apple's Foundation Models — **bullet points only**, no filler.
+- [x] Local Qwen mode scaffolded for `Qwen/Qwen3.6-27B` (runtime/model bundle still pending).
 - [x] Free web search (Wikipedia full-text + DuckDuckGo) feeding the model; toggleable; **fetched facts shown on screen** (🔎) for transparency.
 - [x] TTS to headphones when connected; notification always; music ducked not paused.
 - [x] A new answer **interrupts/replaces** one that's still playing.
@@ -133,6 +137,8 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
   verified yet.
 - **Small on-device model** — strong for reasoning/short answers, weaker on niche/recent facts;
   web search fills some gaps. DuckDuckGo/Wikipedia won't do live scores/breaking news.
+- **Local Qwen is not runnable yet** — `Qwen3.6-27B` is much larger than Apple's built-in model.
+  Running it on iPhone needs a quantized build plus a native runtime such as llama.cpp/MLC.
 - **Weekly re-sign** with a free Apple ID; 3-app sideload limit.
 - **CI maintenance:** GitHub is deprecating Node 20 actions (forced Node 24 on 2026-06-02, removed
   2026-09-16). Bump `actions/checkout` and `actions/upload-artifact` before then.
@@ -143,7 +149,8 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 
 - Smarter **auto mode**: silence/pause detection (VAD), better question detection.
 - **Avoid transcribing its own TTS** (pause recognition while speaking).
-- Swap-in an **open-source model** (llama.cpp) or a **cloud API** option behind `AnswerProvider`.
+- Wire a native runtime for **local Qwen** (likely llama.cpp or MLC), choose a GGUF/MLC
+  quantization, and decide whether the model is bundled or imported on-device.
 - Stronger search via a **Brave/Tavily** key (still free tier) when desired.
 - Verify/strengthen **background listening**; consider a Live Activity for quick triggering.
 - Nicer TTS voice; per-answer "copy/share".

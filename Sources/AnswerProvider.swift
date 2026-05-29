@@ -11,6 +11,22 @@ protocol AnswerProvider {
     func answer(context: String, facts: String) async throws -> String
 }
 
+enum BrainMode: String, CaseIterable, Identifiable {
+    case appleOnDevice
+    case localQwen
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .appleOnDevice:
+            return "Apple"
+        case .localQwen:
+            return "Qwen local"
+        }
+    }
+}
+
 /// The shared persona/instructions for every provider.
 let geniusInstructions = """
 You feed the user the answer to whatever was just asked or discussed, so they sound brilliant.
@@ -26,5 +42,50 @@ struct UnavailableProvider: AnswerProvider {
     var isReady: Bool { false }
     func answer(context: String, facts: String) async throws -> String {
         "On-device model isn't available. Make sure Apple Intelligence is turned on in Settings, then reopen Genius."
+    }
+}
+
+enum AnswerFormatter {
+    static func bulletOnly(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+
+        let lines = trimmed
+            .components(separatedBy: .newlines)
+            .map { cleanBulletText($0) }
+            .filter { !$0.isEmpty }
+
+        let candidates: [String]
+        if lines.count > 1 {
+            candidates = lines
+        } else {
+            candidates = splitSentences(trimmed).map(cleanBulletText).filter { !$0.isEmpty }
+        }
+
+        return candidates
+            .prefix(4)
+            .map { "- \($0)" }
+            .joined(separator: "\n")
+    }
+
+    private static func cleanBulletText(_ line: String) -> String {
+        var text = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        while text.hasPrefix("-") || text.hasPrefix("*") {
+            text.removeFirst()
+            text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if let dot = text.firstIndex(of: ".") {
+            let prefix = text[..<dot]
+            if !prefix.isEmpty, prefix.allSatisfy({ $0.isNumber }) {
+                text = String(text[text.index(after: dot)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        return text
+    }
+
+    private static func splitSentences(_ text: String) -> [String] {
+        text.split(whereSeparator: { ".!?".contains($0) })
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
