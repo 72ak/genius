@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var model = AppModel()
+    @ObservedObject private var model = AppModel.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -27,6 +27,7 @@ struct ContentView: View {
 
             Toggle("Auto-answer when a question is heard", isOn: $model.autoMode)
             Toggle("Web search (free — Wikipedia + DuckDuckGo)", isOn: $model.webSearchEnabled)
+            Toggle("Headphone play/pause triggers Genius", isOn: $model.headphoneButtonEnabled)
 
             Button(action: model.triggerAnswer) {
                 Text(model.isThinking ? "Thinking…" : "Answer now")

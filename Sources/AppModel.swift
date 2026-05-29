@@ -1,13 +1,17 @@
 import Foundation
 import Combine
 import SwiftUI
+import AVFoundation
 
 /// Orchestrates listening → recall → answer → speak/notify.
 @MainActor
 final class AppModel: ObservableObject {
+    static let shared = AppModel()
+
     @Published var recallSeconds: Double = 60      // 30...300
     @Published var autoMode = false
     @Published var webSearchEnabled = true
+    @Published var headphoneButtonEnabled = true { didSet { updateRemoteControl() } }
     @Published var latestAnswer = ""
     @Published var isThinking = false
     @Published var statusMessage = "Starting…"
@@ -16,6 +20,7 @@ final class AppModel: ObservableObject {
     let output = AudioOutput()
 
     private let provider: AnswerProvider
+    private let remote = RemoteControl()
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -36,6 +41,21 @@ final class AppModel: ObservableObject {
         output.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+
+        remote.onTrigger = { [weak self] in self?.triggerAnswer() }
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.updateRemoteControl() }
+        }
+    }
+
+    func updateRemoteControl() {
+        if headphoneButtonEnabled && AudioSessionManager.shared.headphonesConnected {
+            remote.enable()
+        } else {
+            remote.disable()
+        }
     }
 
     func onAppear() async {
@@ -52,6 +72,7 @@ final class AppModel: ObservableObject {
             return
         }
         transcriber.start()
+        updateRemoteControl()
         statusMessage = provider.isReady ? "Listening…" : "Listening — but the on-device model isn't ready."
     }
 
