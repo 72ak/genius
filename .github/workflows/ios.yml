@@ -1,0 +1,49 @@
+name: Build iOS (unsigned IPA)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned archive
+        run: |
+          xcodebuild \
+            -project Genius.xcodeproj \
+            -scheme Genius \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/Genius.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS=""
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R build/Genius.xcarchive/Products/Applications/Genius.app build/Payload/
+          (cd build && zip -r Genius-unsigned.ipa Payload)
+          rm -rf build/Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Genius-unsigned-ipa
+          path: build/Genius-unsigned.ipa
+          if-no-files-found: error
