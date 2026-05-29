@@ -9,6 +9,12 @@ final class AppModel: ObservableObject {
     static let shared = AppModel()
 
     @Published var recallSeconds: Double = 60      // 30...300
+    @Published var listeningEnabled = true {
+        didSet {
+            UserDefaults.standard.set(listeningEnabled, forKey: "listeningEnabled")
+            if didFinishInit { applyListeningState() }
+        }
+    }
     @Published var autoMode = false
     @Published var webSearchEnabled = true
     @Published var headphoneButtonEnabled = true { didSet { updateRemoteControl() } }
@@ -37,6 +43,7 @@ final class AppModel: ObservableObject {
     private let appleProvider: AnswerProvider
     private let remote = RemoteControl()
     private var cancellables = Set<AnyCancellable>()
+    private var didFinishInit = false
 
     init() {
         if #available(iOS 26.0, *) {
@@ -48,6 +55,7 @@ final class AppModel: ObservableObject {
         } else {
             appleProvider = UnavailableProvider()
         }
+        listeningEnabled = UserDefaults.standard.object(forKey: "listeningEnabled") as? Bool ?? true
         geminiAPIKey = KeychainStore.read(account: "gemini_api_key")
 
         // Re-publish nested ObservableObjects so the view updates on their changes.
@@ -67,6 +75,12 @@ final class AppModel: ObservableObject {
                 self?.updateRemoteControl()
             }
         }
+        NotificationCenter.default.addObserver(
+            forName: .toggleListeningFromShortcut, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.toggleListening() }
+        }
+        didFinishInit = true
     }
 
     func updateRemoteControl() {
@@ -90,17 +104,21 @@ final class AppModel: ObservableObject {
             statusMessage = "Microphone & Speech permission needed (Settings ▸ Genius)."
             return
         }
-        transcriber.start()
+        applyListeningState()
         updateRemoteControl()
         updateReadyStatus()
     }
 
     func triggerAnswer() {
         guard !isThinking else { return }
+        if listeningEnabled { transcriber.ensureRunning() }
         Task {
             isThinking = true
             output.stop()   // clear any answer that's still playing
-            defer { isThinking = false }
+            defer {
+                isThinking = false
+                if self.listeningEnabled { self.transcriber.ensureRunning() }
+            }
 
             let context = await transcriber.recall(seconds: recallSeconds)
             guard !context.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -125,6 +143,7 @@ final class AppModel: ObservableObject {
                 let answer = AnswerFormatter.bulletOnly(try await provider.answer(context: context, facts: facts))
                 latestAnswer = answer
                 Notifier.post(answer: answer)
+                if listeningEnabled { transcriber.ensureRunning() }
                 if AudioSessionManager.shared.headphonesConnected {
                     output.speak(answer)
                 }
@@ -142,6 +161,10 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func toggleListening() {
+        listeningEnabled.toggle()
+    }
+
     private func selectedProvider() -> AnswerProvider {
         switch brainMode {
         case .appleOnDevice:
@@ -153,10 +176,25 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private func applyListeningState() {
+        if listeningEnabled {
+            transcriber.ensureRunning()
+        } else {
+            transcriber.stop()
+        }
+        updateReadyStatus()
+    }
+
     private func updateReadyStatus() {
         guard transcriber.authorized else { return }
+        guard listeningEnabled else {
+            statusMessage = "Listening off."
+            LiveActivityManager.shared.update(isListening: false, status: statusMessage)
+            return
+        }
         let provider = selectedProvider()
         statusMessage = provider.isReady ? "Listening…" : notReadyMessage()
+        LiveActivityManager.shared.update(isListening: true, status: statusMessage)
     }
 
     private func notReadyMessage() -> String {
@@ -169,4 +207,8 @@ final class AppModel: ObservableObject {
             return "Gemini selected - add your Gemini API key to answer with Flash-Lite."
         }
     }
+}
+
+extension Notification.Name {
+    static let toggleListeningFromShortcut = Notification.Name("toggleListeningFromShortcut")
 }

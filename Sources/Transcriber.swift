@@ -49,6 +49,15 @@ final class Transcriber: ObservableObject {
         }
     }
 
+    func ensureRunning() {
+        guard authorized else { return }
+        if isRunning {
+            AudioSessionManager.shared.preferBuiltInMic()
+        } else {
+            start()
+        }
+    }
+
     func stop() {
         restartTimer?.invalidate()
         restartTimer = nil

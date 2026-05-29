@@ -84,6 +84,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 | `Notifier.swift` | Local notification with the answer. |
 | `RemoteControl.swift` | Headphone/lock-screen play-pause → trigger (claims Now-Playing). |
 | `AskGeniusIntent.swift` | App Intent + App Shortcut for Action Button / Back-Tap / Siri. |
+| `ListeningActivity.swift`, `LiveActivityManager.swift`, `Widgets/ListeningActivityWidget.swift` | Live Activity / Dynamic Island status with a Start/Stop link back into the app. |
 
 ### Key design choices
 - **On-device model first** (no API key, low latency, private), pluggable so Apple Foundation
@@ -97,7 +98,8 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 - **Manual retrieval** for web search (search → inject facts into the prompt) instead of the model's
   tool-calling API — more reliable.
 - **Built-in mic, not AirPods mic** — AirPods mic is tuned for the wearer up close; the phone mic
-  (with auto-gain) picks up the room/distant speakers better. TTS still plays in the AirPods.
+  (with auto-gain) picks up the room/distant speakers better. TTS still plays in the AirPods. The
+  audio session avoids Bluetooth headset mic input and re-prefers built-in mic on route changes.
 - **Persona prompt** returns **bullet points only** (1–4), bans filler ("Well", "Great question",
   "I think", "Let me…"), and leads with the answer/key fact.
 
@@ -115,6 +117,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 - [x] TTS to headphones when connected; notification always; music ducked not paused.
 - [x] A new answer **interrupts/replaces** one that's still playing.
 - [x] Triggers: in-app button, headphone play/pause, Action Button / Back-Tap / Siri (App Intent).
+- [x] Listening on/off control in-app plus Live Activity / Dynamic Island status link.
 - [x] Basic auto mode (answers on a heard "?").
 - [x] Built-in-mic routing for better distance pickup.
 

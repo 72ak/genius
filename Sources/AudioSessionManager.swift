@@ -13,7 +13,7 @@ final class AudioSessionManager {
         [.mixWithOthers, .allowBluetoothA2DP, .defaultToSpeaker]
 
     func configureForListening() throws {
-        try session.setCategory(.playAndRecord, mode: .default, options: baseOptions)
+        try session.setCategory(.playAndRecord, mode: .measurement, options: baseOptions)
         try session.setActive(true)
         preferBuiltInMic()
     }
@@ -23,12 +23,13 @@ final class AudioSessionManager {
     func preferBuiltInMic() {
         guard let builtIn = session.availableInputs?.first(where: { $0.portType == .builtInMic }) else { return }
         try? session.setPreferredInput(builtIn)
+        preferMostUsefulDataSource(for: builtIn)
     }
 
     /// Toggle ducking of other apps' audio. Called around TTS playback.
     func setDucking(_ ducking: Bool) {
         let options = ducking ? baseOptions.union(.duckOthers) : baseOptions
-        try? session.setCategory(.playAndRecord, mode: .default, options: options)
+        try? session.setCategory(.playAndRecord, mode: .measurement, options: options)
         preferBuiltInMic()
     }
 
@@ -41,6 +42,17 @@ final class AudioSessionManager {
             default:
                 return false
             }
+        }
+    }
+
+    private func preferMostUsefulDataSource(for input: AVAudioSessionPortDescription) {
+        guard let sources = input.dataSources, !sources.isEmpty else { return }
+        let preferred = sources.first { source in
+            let name = source.dataSourceName.lowercased()
+            return name.contains("bottom") || name.contains("front") || name.contains("back")
+        } ?? sources.first
+        if let preferred {
+            try? input.setPreferredDataSource(preferred)
         }
     }
 }

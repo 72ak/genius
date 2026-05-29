@@ -22,6 +22,11 @@ struct GeniusApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onOpenURL { url in
+                    if url == URL(string: "genius://toggle-listening") {
+                        NotificationCenter.default.post(name: .toggleListeningFromShortcut, object: nil)
+                    }
+                }
         }
     }
 }

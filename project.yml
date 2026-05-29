@@ -21,6 +21,7 @@ targets:
         UILaunchScreen: {}
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
+        NSSupportsLiveActivities: true
         NSMicrophoneUsageDescription: "Genius listens to nearby conversation so it can answer on your behalf."
         NSSpeechRecognitionUsageDescription: "Genius transcribes speech on-device to work out what to say."
         UIBackgroundModes:
@@ -28,9 +29,30 @@ targets:
     dependencies:
       - package: swift-llama-cpp
         product: SwiftLlama
+      - target: GeniusWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.akash.genius
+        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: "2"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: "NO"
+  GeniusWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widgets
+      - Sources/ListeningActivity.swift
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Genius Widgets
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.akash.genius.widgets
         MARKETING_VERSION: "0.2"
         CURRENT_PROJECT_VERSION: "2"
         TARGETED_DEVICE_FAMILY: "1"

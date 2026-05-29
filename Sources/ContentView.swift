@@ -18,6 +18,12 @@ struct ContentView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
+            Button(action: model.toggleListening) {
+                Text(model.listeningEnabled ? "Turn listening off" : "Turn listening on")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(model.listeningEnabled ? .bordered : .borderedProminent)
+
             ScrollView {
                 Text(transcriptText.isEmpty ? "..." : transcriptText)
                     .frame(maxWidth: .infinity, alignment: .leading)
