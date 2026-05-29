@@ -8,6 +8,7 @@ import AVFoundation
 @MainActor
 final class Transcriber: ObservableObject {
     @Published var livePartial: String = ""
+    @Published var transcript: String = ""   // accumulated conversation (for display)
     @Published var isRunning = false
     @Published var authorized = false
 
@@ -111,7 +112,15 @@ final class Transcriber: ObservableObject {
         let text = livePartial.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         livePartial = ""
+        appendToTranscript(text)
         Task { await buffer.append(text) }
         onFinalized?(text)
+    }
+
+    private func appendToTranscript(_ text: String) {
+        transcript = transcript.isEmpty ? text : transcript + " " + text
+        if transcript.count > 1500 {
+            transcript = String(transcript.suffix(1500))
+        }
     }
 }

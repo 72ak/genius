@@ -46,7 +46,10 @@ final class AppModel: ObservableObject {
         NotificationCenter.default.addObserver(
             forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.updateRemoteControl() }
+            Task { @MainActor in
+                AudioSessionManager.shared.preferBuiltInMic()
+                self?.updateRemoteControl()
+            }
         }
     }
 

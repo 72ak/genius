@@ -3,6 +3,12 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject private var model = AppModel.shared
 
+    private var transcriptText: String {
+        [model.transcriber.transcript, model.transcriber.livePartial]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Genius")
@@ -14,10 +20,11 @@ struct ContentView: View {
 
             // Live transcript
             ScrollView {
-                Text(model.transcriber.livePartial.isEmpty ? "…" : model.transcriber.livePartial)
+                Text(transcriptText.isEmpty ? "…" : transcriptText)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
             }
-            .frame(height: 110)
+            .frame(height: 140)
 
             // Recall window
             VStack(alignment: .leading, spacing: 6) {
