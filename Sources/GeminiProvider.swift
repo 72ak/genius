@@ -1,9 +1,10 @@
 import Foundation
 
 struct GeminiProvider: AnswerProvider {
-    static let modelName = "gemini-3.1-flash-lite"
+    static let defaultModelName = "gemini-3.1-flash-lite"
 
     let apiKey: String
+    let modelName: String
 
     var isReady: Bool {
         !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -16,7 +17,9 @@ struct GeminiProvider: AnswerProvider {
         }
         prompt += "Conversation so far:\n\"\(context)\"\n\nWhat should I say?"
 
-        guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(Self.modelName):generateContent") else {
+        let model = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !model.isEmpty,
+              let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent") else {
             throw GeminiError.invalidURL
         }
 
@@ -30,7 +33,8 @@ struct GeminiProvider: AnswerProvider {
             generationConfig: GenerationConfig(
                 maxOutputTokens: 120,
                 temperature: 0.2,
-                topP: 0.9
+                topP: 0.9,
+                thinkingConfig: ThinkingConfig(thinkingLevel: "minimal")
             )
         ))
 
@@ -47,6 +51,7 @@ struct GeminiProvider: AnswerProvider {
 
         let text = decoded.candidates?
             .flatMap { $0.content.parts }
+            .filter { $0.thought != true }
             .compactMap(\.text)
             .joined(separator: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -68,12 +73,23 @@ private struct Content: Codable {
 
 private struct Part: Codable {
     let text: String?
+    let thought: Bool?
+
+    init(text: String?, thought: Bool? = nil) {
+        self.text = text
+        self.thought = thought
+    }
 }
 
 private struct GenerationConfig: Encodable {
     let maxOutputTokens: Int
     let temperature: Double
     let topP: Double
+    let thinkingConfig: ThinkingConfig
+}
+
+private struct ThinkingConfig: Encodable {
+    let thinkingLevel: String
 }
 
 private struct ResponseBody: Decodable {

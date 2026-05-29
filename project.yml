@@ -18,6 +18,10 @@ targets:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: Genius
+        CFBundleURLTypes:
+          - CFBundleURLName: com.akash.genius
+            CFBundleURLSchemes:
+              - genius
         UILaunchScreen: {}
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true

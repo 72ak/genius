@@ -40,6 +40,7 @@ final class AudioOutput: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         Task { @MainActor in
             self.isSpeaking = false
             AudioSessionManager.shared.setDucking(false)
+            NotificationCenter.default.post(name: .speechOutputFinished, object: nil)
         }
     }
 
@@ -53,6 +54,7 @@ final class AudioOutput: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             }
             self.isSpeaking = false
             AudioSessionManager.shared.setDucking(false)
+            NotificationCenter.default.post(name: .speechOutputFinished, object: nil)
         }
     }
 }

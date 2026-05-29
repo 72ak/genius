@@ -53,6 +53,7 @@ final class Transcriber: ObservableObject {
         guard authorized else { return }
         if isRunning {
             AudioSessionManager.shared.preferBuiltInMic()
+            recoverIfNeeded()
         } else {
             start()
         }
@@ -126,6 +127,24 @@ final class Transcriber: ObservableObject {
     private func recycleTask() {
         endTask(commit: true)
         beginTask()
+    }
+
+    private func recoverIfNeeded() {
+        do {
+            if !audioEngine.isRunning {
+                try AudioSessionManager.shared.configureForListening()
+                installTap()
+                audioEngine.prepare()
+                try audioEngine.start()
+            } else {
+                AudioSessionManager.shared.preferBuiltInMic()
+            }
+            if request == nil || task == nil {
+                beginTask()
+            }
+        } catch {
+            print("Transcriber recovery error: \(error)")
+        }
     }
 
     private func endTask(commit: Bool) {

@@ -6,6 +6,7 @@ import AVFoundation
 final class AudioSessionManager {
     static let shared = AudioSessionManager()
     private let session = AVAudioSession.sharedInstance()
+    private var isDucking = false
 
     // No .allowBluetooth (that forces the low-quality headset mic). A2DP keeps
     // high-quality output in AirPods while we record from the phone's own mic.
@@ -13,7 +14,8 @@ final class AudioSessionManager {
         [.mixWithOthers, .allowBluetoothA2DP, .defaultToSpeaker]
 
     func configureForListening() throws {
-        try session.setCategory(.playAndRecord, mode: .measurement, options: baseOptions)
+        let options = isDucking ? baseOptions.union(.duckOthers) : baseOptions
+        try session.setCategory(.playAndRecord, mode: .measurement, options: options)
         try session.setActive(true)
         preferBuiltInMic()
     }
@@ -28,9 +30,11 @@ final class AudioSessionManager {
 
     /// Toggle ducking of other apps' audio. Called around TTS playback.
     func setDucking(_ ducking: Bool) {
+        isDucking = ducking
         let options = ducking ? baseOptions.union(.duckOthers) : baseOptions
         try? session.setCategory(.playAndRecord, mode: .measurement, options: options)
         preferBuiltInMic()
+        NotificationCenter.default.post(name: .audioSessionReconfigured, object: nil)
     }
 
     /// True if a wired or Bluetooth headset is the current output route.

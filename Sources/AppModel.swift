@@ -30,11 +30,27 @@ final class AppModel: ObservableObject {
             updateReadyStatus()
         }
     }
+    @Published var appleModelPreference: String = "System default" {
+        didSet { UserDefaults.standard.set(appleModelPreference, forKey: "appleModelPreference") }
+    }
+    @Published var qwenModelFileName: String = LocalQwenProvider.defaultPreferredFileName {
+        didSet {
+            UserDefaults.standard.set(qwenModelFileName, forKey: "qwenModelFileName")
+            updateReadyStatus()
+        }
+    }
+    @Published var geminiModelName: String = GeminiProvider.defaultModelName {
+        didSet {
+            UserDefaults.standard.set(geminiModelName, forKey: "geminiModelName")
+            updateReadyStatus()
+        }
+    }
     @Published var latestAnswer = ""
     @Published var lastFacts = ""
     @Published var isThinking = false
     let localQwenModelName = LocalQwenProvider.modelName
-    let geminiModelName = GeminiProvider.modelName
+    let geminiModelOptions = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash-lite"]
+    let appleModelOptions = ["System default"]
     @Published var statusMessage = "Starting…"
 
     let transcriber = Transcriber()
@@ -57,6 +73,9 @@ final class AppModel: ObservableObject {
         }
         listeningEnabled = UserDefaults.standard.object(forKey: "listeningEnabled") as? Bool ?? true
         geminiAPIKey = KeychainStore.read(account: "gemini_api_key")
+        appleModelPreference = UserDefaults.standard.string(forKey: "appleModelPreference") ?? "System default"
+        qwenModelFileName = UserDefaults.standard.string(forKey: "qwenModelFileName") ?? LocalQwenProvider.defaultPreferredFileName
+        geminiModelName = UserDefaults.standard.string(forKey: "geminiModelName") ?? GeminiProvider.defaultModelName
 
         // Re-publish nested ObservableObjects so the view updates on their changes.
         transcriber.objectWillChange
@@ -79,6 +98,16 @@ final class AppModel: ObservableObject {
             forName: .toggleListeningFromShortcut, object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in self?.toggleListening() }
+        }
+        NotificationCenter.default.addObserver(
+            forName: .audioSessionReconfigured, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.recoverListeningSoon() }
+        }
+        NotificationCenter.default.addObserver(
+            forName: .speechOutputFinished, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.recoverListeningSoon() }
         }
         didFinishInit = true
     }
@@ -146,6 +175,7 @@ final class AppModel: ObservableObject {
                 if listeningEnabled { transcriber.ensureRunning() }
                 if AudioSessionManager.shared.headphonesConnected {
                     output.speak(answer)
+                    recoverListeningSoon()
                 }
                 statusMessage = "Listening…"
             } catch {
@@ -170,9 +200,21 @@ final class AppModel: ObservableObject {
         case .appleOnDevice:
             appleProvider
         case .localQwen:
-            LocalQwenProvider()
+            LocalQwenProvider(preferredFileName: qwenModelFileName)
         case .geminiFlashLite:
-            GeminiProvider(apiKey: geminiAPIKey)
+            GeminiProvider(apiKey: geminiAPIKey, modelName: geminiModelName)
+        }
+    }
+
+    private func recoverListeningSoon() {
+        guard listeningEnabled else { return }
+        transcriber.ensureRunning()
+        Task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            await MainActor.run {
+                guard self.listeningEnabled else { return }
+                self.transcriber.ensureRunning()
+            }
         }
     }
 
@@ -202,7 +244,7 @@ final class AppModel: ObservableObject {
         case .appleOnDevice:
             return "Listening — but the on-device model isn't ready."
         case .localQwen:
-            return LocalQwenProvider.notReadyReason
+            return "Local Qwen is selected, but no GGUF model file is installed. \(LocalQwenProvider.installHint(fileName: qwenModelFileName))"
         case .geminiFlashLite:
             return "Gemini selected - add your Gemini API key to answer with Flash-Lite."
         }
@@ -211,4 +253,6 @@ final class AppModel: ObservableObject {
 
 extension Notification.Name {
     static let toggleListeningFromShortcut = Notification.Name("toggleListeningFromShortcut")
+    static let audioSessionReconfigured = Notification.Name("audioSessionReconfigured")
+    static let speechOutputFinished = Notification.Name("speechOutputFinished")
 }

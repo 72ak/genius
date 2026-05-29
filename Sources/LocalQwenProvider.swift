@@ -7,17 +7,21 @@ import SwiftLlama
 /// On-device open-weight Qwen provider backed by a GGUF runtime when available.
 struct LocalQwenProvider: AnswerProvider {
     static let modelName = "Qwen3-4B-GGUF"
-    static let preferredFileName = "qwen3-4b.gguf"
-    static let installHint = "Add qwen3-4b.gguf to the Genius Documents folder, then reopen the app or switch models."
-    static let notReadyReason = "Local Qwen is selected, but no GGUF model file is installed. \(installHint)"
+    static let defaultPreferredFileName = "qwen3-4b.gguf"
+    static func installHint(fileName: String) -> String {
+        let effectiveName = fileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? defaultPreferredFileName : fileName
+        return "Add \(effectiveName) to the Genius Documents folder, then reopen the app or switch models."
+    }
+
+    let preferredFileName: String
 
     var isReady: Bool {
-        Self.modelURL() != nil
+        Self.modelURL(preferredFileName: preferredFileName) != nil
     }
 
     func answer(context: String, facts: String) async throws -> String {
-        guard let modelURL = Self.modelURL() else {
-            throw LocalQwenError.modelMissing
+        guard let modelURL = Self.modelURL(preferredFileName: preferredFileName) else {
+            throw LocalQwenError.modelMissing(Self.installHint(fileName: preferredFileName))
         }
 
         var prompt = ""
@@ -33,11 +37,12 @@ struct LocalQwenProvider: AnswerProvider {
         )
     }
 
-    static func modelURL() -> URL? {
+    static func modelURL(preferredFileName: String) -> URL? {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
         guard let documents else { return nil }
 
-        let preferred = documents.appendingPathComponent(preferredFileName)
+        let fileName = preferredFileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let preferred = documents.appendingPathComponent(fileName.isEmpty ? defaultPreferredFileName : fileName)
         if FileManager.default.fileExists(atPath: preferred.path) {
             return preferred
         }
@@ -100,13 +105,13 @@ private actor LocalQwenEngine {
 }
 
 private enum LocalQwenError: LocalizedError {
-    case modelMissing
+    case modelMissing(String)
     case runtimeUnavailable
 
     var errorDescription: String? {
         switch self {
-        case .modelMissing:
-            return LocalQwenProvider.notReadyReason
+        case .modelMissing(let hint):
+            return "Local Qwen is selected, but no GGUF model file is installed. \(hint)"
         case .runtimeUnavailable:
             return "Local Qwen runtime is not linked into this build."
         }

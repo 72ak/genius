@@ -64,25 +64,50 @@ struct ContentView: View {
                 }
                 .pickerStyle(.segmented)
 
+                if model.brainMode == .appleOnDevice {
+                    Picker("Apple model", selection: $model.appleModelPreference) {
+                        ForEach(model.appleModelOptions, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+
+                    Text("Apple Foundation Models exposes the on-device system default model only; this preference is saved for future model variants.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
                 if model.brainMode == .localQwen {
                     Text(model.localQwenModelName)
                         .font(.headline)
 
-                    Text(LocalQwenProvider.installHint)
+                    TextField("GGUF filename", text: $model.qwenModelFileName)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textFieldStyle(.roundedBorder)
+
+                    Text(LocalQwenProvider.installHint(fileName: model.qwenModelFileName))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
 
                 if model.brainMode == .geminiFlashLite {
-                    Text(model.geminiModelName)
-                        .font(.headline)
+                    Picker("Gemini model", selection: $model.geminiModelName) {
+                        ForEach(model.geminiModelOptions, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+
+                    TextField("Custom Gemini model", text: $model.geminiModelName)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textFieldStyle(.roundedBorder)
 
                     SecureField("Gemini API key", text: $model.geminiAPIKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textFieldStyle(.roundedBorder)
 
-                    Text("Stored in Keychain on this iPhone. Flash-Lite is the low-latency, low-cost cloud fallback.")
+                    Text("Key stored in Keychain. Gemini thinking is set to minimal for low latency.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
