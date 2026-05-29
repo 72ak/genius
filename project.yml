@@ -2,7 +2,7 @@ name: Genius
 options:
   bundleIdPrefix: com.akash
   deploymentTarget:
-    iOS: "18.0"
+    iOS: "26.0"
   createIntermediateGroups: true
 targets:
   Genius:
@@ -10,16 +10,23 @@ targets:
     platform: iOS
     sources:
       - Sources
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: Genius
+        UILaunchScreen: {}
+        NSMicrophoneUsageDescription: "Genius listens to nearby conversation so it can answer on your behalf."
+        NSSpeechRecognitionUsageDescription: "Genius transcribes speech on-device to work out what to say."
+        UIBackgroundModes:
+          - audio
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.akash.genius
-        MARKETING_VERSION: "0.1"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: "2"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
-        GENERATE_INFOPLIST_FILE: "YES"
-        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
-        INFOPLIST_KEY_CFBundleDisplayName: Genius
+        GENERATE_INFOPLIST_FILE: "NO"
 schemes:
   Genius:
     build:
