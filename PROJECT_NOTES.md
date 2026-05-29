@@ -76,7 +76,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 | `TranscriptBuffer.swift` | Timestamped rolling buffer (~6 min); serves "last N seconds" for recall. |
 | `AnswerProvider.swift` | `AnswerProvider` protocol + persona instructions + unavailable fallback. |
 | `FoundationModelsProvider.swift` | Brain = Apple's on-device model (`FoundationModels`, iOS 26), guarded by `#if canImport`. |
-| `LocalQwenProvider.swift` | Local open-weight Qwen target: `Qwen/Qwen3.6-27B`. Scaffold only until an iOS inference runtime + quantized model file are added. |
+| `LocalQwenProvider.swift` | Local open-weight Qwen target: `Qwen/Qwen3-4B-GGUF`. Scaffold only until an iOS inference runtime + model file are added. |
 | `WebSearch.swift` | Free, keyless lookups: DuckDuckGo Instant Answers + Wikipedia **full-text** search; pulls a query from the transcript. Fetched facts are shown on screen (🔎). |
 | `AudioSessionManager.swift` | `.playAndRecord` + `.mixWithOthers` (music keeps playing), `.duckOthers` only while speaking; forces **built-in mic** for room pickup; A2DP output to AirPods. |
 | `AudioOutput.swift` | TTS (`AVSpeechSynthesizer`); ducks others while talking; a new answer immediately interrupts one that's still playing. |
@@ -87,8 +87,8 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 ### Key design choices
 - **On-device model first** (no API key, low latency, private), pluggable so Apple Foundation
   Models can be replaced by a local open-weight model.
-- **Local Qwen target:** latest open-weight target is `Qwen/Qwen3.6-27B` (Apache-2.0). It is not
-  active yet because the app still needs an iOS inference runtime and a quantized model bundle.
+- **Local Qwen target:** start with `Qwen/Qwen3-4B-GGUF`, not 27B. 4B is the realistic first target
+  for fast local iPhone answers; 8B can be tried later if memory/latency are acceptable.
 - **Manual retrieval** for web search (search → inject facts into the prompt) instead of the model's
   tool-calling API — more reliable.
 - **Built-in mic, not AirPods mic** — AirPods mic is tuned for the wearer up close; the phone mic
@@ -104,7 +104,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 - [x] Clear Transcript button clears both the visible transcript and the timestamped recall buffer sent to the AI.
 - [x] Recall window slider (30 s–5 min).
 - [x] On-device "genius" answers via Apple's Foundation Models — **bullet points only**, no filler.
-- [x] Local Qwen mode scaffolded for `Qwen/Qwen3.6-27B` (runtime/model bundle still pending).
+- [x] Local Qwen mode scaffolded for `Qwen/Qwen3-4B-GGUF` (runtime/model bundle still pending).
 - [x] Free web search (Wikipedia full-text + DuckDuckGo) feeding the model; toggleable; **fetched facts shown on screen** (🔎) for transparency.
 - [x] TTS to headphones when connected; notification always; music ducked not paused.
 - [x] A new answer **interrupts/replaces** one that's still playing.
@@ -138,8 +138,8 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
   verified yet.
 - **Small on-device model** — strong for reasoning/short answers, weaker on niche/recent facts;
   web search fills some gaps. DuckDuckGo/Wikipedia won't do live scores/breaking news.
-- **Local Qwen is not runnable yet** — `Qwen3.6-27B` is much larger than Apple's built-in model.
-  Running it on iPhone needs a quantized build plus a native runtime such as llama.cpp/MLC.
+- **Local Qwen is not runnable yet** — even `Qwen3-4B-GGUF` needs a native runtime such as
+  llama.cpp/MLC and a model file available to the app.
   Selecting Qwen in the UI currently shows the intended model target only; it cannot generate
   answers until that runtime/model bundle work is done.
 - **Weekly re-sign** with a free Apple ID; 3-app sideload limit.

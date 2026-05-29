@@ -54,7 +54,7 @@ struct ContentView: View {
                     Text(model.localQwenModelName)
                         .font(.headline)
 
-                    Text("Qwen does not answer yet because only the model target is selected. The app still needs an iOS inference runtime and a quantized model file installed.")
+                    Text("Targeting 4B first because it is much more realistic for fast local iPhone answers than 8B/27B. Runtime/model install still needs to be wired.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
