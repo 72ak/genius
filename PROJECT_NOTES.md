@@ -72,13 +72,13 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 | `GeniusApp.swift` | App entry; foreground-notification delegate. |
 | `ContentView.swift` | Minimal UI: live/accumulating transcript, recall slider, toggles, "Answer now", latest answer. |
 | `AppModel.swift` | Orchestrator (singleton). Permissions, listen→recall→search→answer→speak/notify, route changes, triggers. |
-| `Transcriber.swift` | Continuous on-device transcription (`SFSpeechRecognizer`, on-device), recycles task every 45 s, exposes live + accumulated transcript. |
+| `Transcriber.swift` | Continuous on-device transcription (`SFSpeechRecognizer`). Restarts instantly when a phrase finalizes (so it never stops listening after a pause), plus a 45 s safety recycle; exposes live + accumulated transcript. |
 | `TranscriptBuffer.swift` | Timestamped rolling buffer (~6 min); serves "last N seconds" for recall. |
 | `AnswerProvider.swift` | `AnswerProvider` protocol + persona instructions + unavailable fallback. |
 | `FoundationModelsProvider.swift` | Brain = Apple's on-device model (`FoundationModels`, iOS 26), guarded by `#if canImport`. |
-| `WebSearch.swift` | Free, keyless lookups: DuckDuckGo Instant Answers + Wikipedia; pulls a query from the transcript. |
+| `WebSearch.swift` | Free, keyless lookups: DuckDuckGo Instant Answers + Wikipedia **full-text** search; pulls a query from the transcript. Fetched facts are shown on screen (🔎). |
 | `AudioSessionManager.swift` | `.playAndRecord` + `.mixWithOthers` (music keeps playing), `.duckOthers` only while speaking; forces **built-in mic** for room pickup; A2DP output to AirPods. |
-| `AudioOutput.swift` | TTS (`AVSpeechSynthesizer`); ducks others while talking. |
+| `AudioOutput.swift` | TTS (`AVSpeechSynthesizer`); ducks others while talking; a new answer immediately interrupts one that's still playing. |
 | `Notifier.swift` | Local notification with the answer. |
 | `RemoteControl.swift` | Headphone/lock-screen play-pause → trigger (claims Now-Playing). |
 | `AskGeniusIntent.swift` | App Intent + App Shortcut for Action Button / Back-Tap / Siri. |
@@ -90,18 +90,19 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
   tool-calling API — more reliable.
 - **Built-in mic, not AirPods mic** — AirPods mic is tuned for the wearer up close; the phone mic
   (with auto-gain) picks up the room/distant speakers better. TTS still plays in the AirPods.
-- **Persona prompt** bans filler ("Well", "Great question", "I think", "Let me…"); answer first,
-  bullets when useful, 1–2 tight sentences otherwise.
+- **Persona prompt** returns **bullet points only** (1–4), bans filler ("Well", "Great question",
+  "I think", "Let me…"), and leads with the answer/key fact.
 
 ---
 
 ## 5. Features implemented
 
-- [x] Continuous on-device transcription (accumulating, timestamped).
+- [x] Continuous on-device transcription (accumulating, timestamped); **restarts instantly after a pause** so it never goes deaf.
 - [x] Recall window slider (30 s–5 min).
-- [x] On-device "genius" answers via Apple's Foundation Models.
-- [x] Free web search (Wikipedia + DuckDuckGo) feeding the model; toggleable.
+- [x] On-device "genius" answers via Apple's Foundation Models — **bullet points only**, no filler.
+- [x] Free web search (Wikipedia full-text + DuckDuckGo) feeding the model; toggleable; **fetched facts shown on screen** (🔎) for transparency.
 - [x] TTS to headphones when connected; notification always; music ducked not paused.
+- [x] A new answer **interrupts/replaces** one that's still playing.
 - [x] Triggers: in-app button, headphone play/pause, Action Button / Back-Tap / Siri (App Intent).
 - [x] Basic auto mode (answers on a heard "?").
 - [x] Built-in-mic routing for better distance pickup.
