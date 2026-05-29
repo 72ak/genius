@@ -101,6 +101,7 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
 ## 5. Features implemented
 
 - [x] Continuous on-device transcription (accumulating, timestamped); **restarts instantly after a pause** so it never goes deaf.
+- [x] Clear Transcript button clears both the visible transcript and the timestamped recall buffer sent to the AI.
 - [x] Recall window slider (30 s–5 min).
 - [x] On-device "genius" answers via Apple's Foundation Models — **bullet points only**, no filler.
 - [x] Local Qwen mode scaffolded for `Qwen/Qwen3.6-27B` (runtime/model bundle still pending).
@@ -139,6 +140,8 @@ All source in `Sources/`. The "brain" is swappable behind a protocol.
   web search fills some gaps. DuckDuckGo/Wikipedia won't do live scores/breaking news.
 - **Local Qwen is not runnable yet** — `Qwen3.6-27B` is much larger than Apple's built-in model.
   Running it on iPhone needs a quantized build plus a native runtime such as llama.cpp/MLC.
+  Selecting Qwen in the UI currently shows the intended model target only; it cannot generate
+  answers until that runtime/model bundle work is done.
 - **Weekly re-sign** with a free Apple ID; 3-app sideload limit.
 - **CI maintenance:** GitHub is deprecating Node 20 actions (forced Node 24 on 2026-06-02, removed
   2026-09-16). Bump `actions/checkout` and `actions/upload-artifact` before then.

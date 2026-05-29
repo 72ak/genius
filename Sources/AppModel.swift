@@ -126,6 +126,13 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func clearTranscript() {
+        Task {
+            await transcriber.clearTranscript()
+            updateReadyStatus()
+        }
+    }
+
     private func selectedProvider() -> AnswerProvider {
         switch brainMode {
         case .appleOnDevice:
@@ -146,7 +153,7 @@ final class AppModel: ObservableObject {
         case .appleOnDevice:
             return "Listening — but the on-device model isn't ready."
         case .localQwen:
-            return "Local Qwen selected — runtime/model file not installed yet."
+            return LocalQwenProvider.notReadyReason
         }
     }
 }

@@ -18,22 +18,28 @@ struct ContentView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            // Live transcript
             ScrollView {
-                Text(transcriptText.isEmpty ? "…" : transcriptText)
+                Text(transcriptText.isEmpty ? "..." : transcriptText)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
             }
             .frame(height: 140)
 
-            // Recall window
             VStack(alignment: .leading, spacing: 6) {
-                Text("Recall last \(Int(model.recallSeconds))s")
+                HStack {
+                    Text("Recall last \(Int(model.recallSeconds))s")
+                    Spacer()
+                    Button("Clear transcript", role: .destructive) {
+                        model.clearTranscript()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(transcriptText.isEmpty && model.latestAnswer.isEmpty && model.lastFacts.isEmpty)
+                }
                 Slider(value: $model.recallSeconds, in: 30...300, step: 5)
             }
 
             Toggle("Auto-answer when a question is heard", isOn: $model.autoMode)
-            Toggle("Web search (free — Wikipedia + DuckDuckGo)", isOn: $model.webSearchEnabled)
+            Toggle("Web search (free - Wikipedia + DuckDuckGo)", isOn: $model.webSearchEnabled)
             Toggle("Headphone play/pause triggers Genius", isOn: $model.headphoneButtonEnabled)
 
             VStack(alignment: .leading, spacing: 8) {
@@ -48,14 +54,14 @@ struct ContentView: View {
                     Text(model.localQwenModelName)
                         .font(.headline)
 
-                    Text("Latest open-weight Qwen target. Local runtime/model bundle still needs to be added before this can answer.")
+                    Text("Qwen does not answer yet because only the model target is selected. The app still needs an iOS inference runtime and a quantized model file installed.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
 
             Button(action: model.triggerAnswer) {
-                Text(model.isThinking ? "Thinking…" : "Answer now")
+                Text(model.isThinking ? "Thinking..." : "Answer now")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
@@ -63,17 +69,35 @@ struct ContentView: View {
             .disabled(model.isThinking)
 
             if !model.latestAnswer.isEmpty {
-                Text(model.latestAnswer)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Answer preview")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                    ScrollView {
+                        Text(model.latestAnswer)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
+                    .frame(minHeight: 80, maxHeight: 180)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
             }
 
             if !model.lastFacts.isEmpty {
-                Text("🔎 " + model.lastFacts)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(4)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Fetched facts")
+                        .font(.caption.bold())
+                    ScrollView {
+                        Text(model.lastFacts)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
+                    .frame(minHeight: 44, maxHeight: 110)
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             }
 
             Spacer()

@@ -65,6 +65,12 @@ final class Transcriber: ObservableObject {
             .joined(separator: " ")
     }
 
+    func clearTranscript() async {
+        livePartial = ""
+        transcript = ""
+        await buffer.clear()
+    }
+
     // MARK: - Internals
 
     private func installTap() {

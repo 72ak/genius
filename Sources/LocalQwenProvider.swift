@@ -5,10 +5,11 @@ import Foundation
 /// engine (llama.cpp/MLC/etc.) plus a quantized model file before it can answer.
 struct LocalQwenProvider: AnswerProvider {
     static let modelName = "Qwen3.6-27B"
+    static let notReadyReason = "Qwen needs a native iOS inference runtime plus a quantized model file. This build only adds the UI/provider target."
 
     var isReady: Bool { false }
 
     func answer(context: String, facts: String) async throws -> String {
-        "Local Qwen isn't installed yet. Add an iOS inference runtime and a quantized Qwen3.6-27B model file, then switch this provider on."
+        LocalQwenProvider.notReadyReason
     }
 }

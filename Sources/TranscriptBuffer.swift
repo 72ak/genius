@@ -26,6 +26,10 @@ actor TranscriptBuffer {
             .joined(separator: " ")
     }
 
+    func clear() {
+        segments.removeAll()
+    }
+
     private func prune() {
         let cutoff = Date().addingTimeInterval(-maxAge)
         segments.removeAll { $0.date < cutoff }
